@@ -1,0 +1,55 @@
+# Define the Deployment resource for the duration-app
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: duration-app-deployment
+spec:
+  # Configure 2 replicas of the duration-app
+  replicas: 2
+  selector:
+    matchLabels:
+      app: duration-app
+  template:
+    metadata:
+      labels:
+        # Label pods with the app: duration-app label
+        app: duration-app
+    spec:
+      containers:
+      - name: duration-app
+        # Use the specified Docker image (from dockerhub) for the duration-app container
+        image: hichambenbriqa/my_k8s_gunicorn_app:v0
+        # Define the command to start the container
+        command: ["gunicorn"]
+        # Define additional arguments for the command (e.g., bind address, worker count)
+        #The --bind argument determines the address and port on which Gunicorn listens for incoming connections within the container.
+        args: ["--bind", "0.0.0.0:8001", "-w", "4", "app:main()"]
+        # Define resource limits for the container
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # Expose port 8001 within the container
+        ports:
+        - containerPort: 8001
+
+---
+# Define the Service resource to expose the duration-app externally
+apiVersion: v1
+kind: Service
+metadata:
+  name: duration-app-service
+spec:
+  # Define the type of service as LoadBalancer
+  type: LoadBalancer
+  selector:
+    # Select pods with the app: duration-app label
+    app: duration-app
+  # Define port mappings for the service
+  ports:
+  - protocol: TCP
+    # Expose port 80 externally
+    port: 80
+    # Forward traffic to port 8001 on the pods (which is the same port exposed in the container above)
+    targetPort: 8001
+
